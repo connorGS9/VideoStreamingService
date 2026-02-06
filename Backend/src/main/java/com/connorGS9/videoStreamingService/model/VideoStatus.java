@@ -1,7 +1,7 @@
 package com.connorGS9.videoStreamingService.model;
 
 public enum VideoStatus {
-    UPLODADED,
+    UPLOADED,
     PROCESSING,
     READY,
     FAILED
