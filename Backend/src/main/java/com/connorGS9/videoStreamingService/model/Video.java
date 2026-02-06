@@ -22,13 +22,13 @@ public class Video {
 
     public Video() {}
 
-    public Video(String title, String description, Long userId, String originalFileName, VideoStatus status, LocalDateTime uploadedAt) {
+    public Video(String title, String description, Long userId, String originalFileName) {
         this.title = title;
         this.description = description;
         this.userId = userId;
         this.originalFileName = originalFileName;
-        this.status = status;
-        this.uploadedAt = uploadedAt;
+        this.status = VideoStatus.UPLOADED;
+        this.uploadedAt = LocalDateTime.now();
     }
 
     public String getTitle() {
