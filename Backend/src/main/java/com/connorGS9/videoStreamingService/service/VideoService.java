@@ -3,7 +3,10 @@ package com.connorGS9.videoStreamingService.service;
 import com.connorGS9.videoStreamingService.exception.VideoNotFound;
 import com.connorGS9.videoStreamingService.model.Video;
 import com.connorGS9.videoStreamingService.model.VideoStatus;
+import com.connorGS9.videoStreamingService.repository.VideoRepository;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,9 +14,11 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class VideoService {
-
-    private HashMap<Long, Video> videoStore = new HashMap<>();
+    private final VideoRepository videoRepository;
     private AtomicLong idCounter = new AtomicLong(1);
+
+    // Inject through constructor
+    public VideoService(VideoRepository repository) {this.videoRepository = repository;}
 
     public Video createVideo(String title, String description, Long userId, String filename) {
         if (title == null || title.trim().isEmpty()) {
@@ -27,19 +32,15 @@ public class VideoService {
         }
 
         Video vid = new Video(title, description, userId, filename);
-        Long videoId = idCounter.getAndIncrement();
-        vid.setId(videoId);
-        videoStore.put(videoId, vid);
-        return vid;
+        return videoRepository.save(vid);
     }
 
     public Video getVideoById(Long id) {
-        if (!videoStore.containsKey(id)) throw new VideoNotFound("Video with id:" + id + "does not exist");
-        return videoStore.get(id);
+        return videoRepository.findById(id).orElseThrow(() -> new VideoNotFound("Video with id: " + id + " could not be found"));
     }
 
     public List<Video> getAllVideos() {
-        return new ArrayList<>(videoStore.values());
+        return videoRepository.findAll();
     }
 
     public Video updateVideoStatus(Long id, VideoStatus newStatus) {
@@ -48,13 +49,17 @@ public class VideoService {
             throw new VideoNotFound("Video with id: " + id + " does not exist");
         }
         vid.setStatus(newStatus);
-        return vid;
+
+        if (newStatus == VideoStatus.READY) {
+            vid.setProcessedAt(LocalDateTime.now());
+        }
+        return videoRepository.save(vid);
     }
 
     public void deleteVideo(Long id) {
-        if (!videoStore.containsKey(id)) {
-            throw new VideoNotFound("Cannot delete - video not found with id: " + id);
+        if (!videoRepository.existsById(id)) {
+            throw new VideoNotFound("Cannot delete, video not found with id: " + id);
         }
-        videoStore.remove(id);
+        videoRepository.deleteById(id);
     }
 }

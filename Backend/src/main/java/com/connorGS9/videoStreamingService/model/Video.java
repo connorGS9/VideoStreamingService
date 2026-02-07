@@ -3,21 +3,37 @@ package com.connorGS9.videoStreamingService.model;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
+import jakarta.persistence.*;
 
+@Entity
+@Table(name = "videos")
 public class Video {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id; // Unique id of video
+    @Column(nullable = false, length = 200)
     private String title; // Title of video
+    @Column(length = 1000)
     private String description; // Description of video
+    @Column(name = "length_seconds")
     private Integer lengthSeconds; // In total seconds 2:24 = 144. Integer so it can be null
+    @Column(name = "user_id", nullable = false)
     private Long userId; // UserId of who uploaded this video
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private VideoStatus status; // Enum of uploaded, processing, ready, or failed
+    @Column(name = "storage_key")
     private String storageKey; // Path to where the file is stored within Mini IO
+    @Column(name = "uploaded_at")
     private LocalDateTime uploadedAt; // When was it uploaded?
+    @Column(name = "processed_at")
     private LocalDateTime processedAt; // When did processing finish? (null if not done)
+    @Column(name = "original_file_name")
     private String originalFileName; // Original name of uploaded file
     private Integer width;   // 1920
     private Integer height;  // 1080
     private String codec;    // "h264"
+    @Column(name = "file_size_bytes")
     private Long fileSizeBytes; // File size in bytes
 
     public Video() {}
