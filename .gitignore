@@ -28,4 +28,10 @@ replay_pid*
 **/*.iml
 **/*.iws
 **/*.ipr
-**/out/
+
+
+#Applicaiton properties
+**/application.properties
+
+# Maven build output
+**/target/
