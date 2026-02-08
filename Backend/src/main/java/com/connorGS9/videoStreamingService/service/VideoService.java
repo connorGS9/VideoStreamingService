@@ -1,10 +1,13 @@
 package com.connorGS9.videoStreamingService.service;
 
+import com.connorGS9.videoStreamingService.dto.VideoUploadRequest;
+import com.connorGS9.videoStreamingService.exception.StorageException;
 import com.connorGS9.videoStreamingService.exception.VideoNotFound;
 import com.connorGS9.videoStreamingService.model.Video;
 import com.connorGS9.videoStreamingService.model.VideoStatus;
 import com.connorGS9.videoStreamingService.repository.VideoRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -15,24 +18,13 @@ import java.util.concurrent.atomic.AtomicLong;
 @Service
 public class VideoService {
     private final VideoRepository videoRepository;
+    private final StorageService_S3_Wrapper s3Wrapper;
     private AtomicLong idCounter = new AtomicLong(1);
 
     // Inject through constructor
-    public VideoService(VideoRepository repository) {this.videoRepository = repository;}
-
-    public Video createVideo(String title, String description, Long userId, String filename) {
-        if (title == null || title.trim().isEmpty()) {
-            throw new IllegalArgumentException("Title cannot be null or empty");
-        }
-        if (userId == null) {
-            throw new IllegalArgumentException("UserId cannot be null");
-        }
-        if (filename == null || filename.trim().isEmpty()) {
-            throw new IllegalArgumentException("Filename cannot be null or empty");
-        }
-
-        Video vid = new Video(title, description, userId, filename);
-        return videoRepository.save(vid);
+    public VideoService(VideoRepository repository, StorageService_S3_Wrapper s3Wrapper) {
+        this.videoRepository = repository;
+        this.s3Wrapper = s3Wrapper;
     }
 
     public Video getVideoById(Long id) {
@@ -62,4 +54,31 @@ public class VideoService {
         }
         videoRepository.deleteById(id);
     }
+
+    // Method to upload the video by calling S3 wrapper and save the entry in the database
+    public Video uploadVideo(MultipartFile file, VideoUploadRequest request) {
+        // Validate inputs
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("File cannot be null or empty");
+        }
+
+        // Create the video
+        Video video = new Video(request.getTitle(), request.getDescription(), request.getUserId(), file.getOriginalFilename());
+        // Save and get incremented id from database
+        video = videoRepository.save(video);
+        try {
+            // Get the storagekey from the S3 wrapper using the file and videoId
+            String storageKey = s3Wrapper.uploadRawVideo(file, video.getId());
+            // Set the storageKey
+            video.setStorageKey(storageKey);
+            // Return the video and save in the DB
+            return videoRepository.save(video);
+        } catch (StorageException e) {
+            // If the S3 storge fails, mark the video status as failed and re-save
+            video.setStatus(VideoStatus.FAILED);
+            videoRepository.save(video);
+            throw e;
+        }
+    }
+
 }
