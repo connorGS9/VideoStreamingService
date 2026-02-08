@@ -11,3 +11,9 @@ spring.jpa.properties.hibernate.format_sql=true
 
 # Server
 server.port=8080
+
+# AWS S3 Configuration
+aws.accessKeyId=YOUR_AWS_ACCESS_KEY_ID
+aws.secretAccessKey=YOUR_AWS_SECRET_ACCESS_KEY
+aws.region=us-east-1
+aws.s3.bucketName=video-streaming-service-connorgs9
