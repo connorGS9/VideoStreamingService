@@ -17,3 +17,7 @@ aws.accessKeyId=YOUR_AWS_ACCESS_KEY_ID
 aws.secretAccessKey=YOUR_AWS_SECRET_ACCESS_KEY
 aws.region=us-east-1
 aws.s3.bucketName=video-streaming-service-connorgs9
+
+# File Upload Limits - SpringBoot has a limit of 1MB if not altered
+spring.servlet.multipart.max-file-size=500MB
+spring.servlet.multipart.max-request-size=500MB

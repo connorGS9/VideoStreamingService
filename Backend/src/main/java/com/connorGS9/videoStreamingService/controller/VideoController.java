@@ -2,11 +2,14 @@ package com.connorGS9.videoStreamingService.controller;
 
 import com.connorGS9.videoStreamingService.dto.UpdateStatusRequest;
 import com.connorGS9.videoStreamingService.dto.VideoCreateRequest;
+import com.connorGS9.videoStreamingService.dto.VideoUploadRequest;
 import com.connorGS9.videoStreamingService.model.Video;
 import com.connorGS9.videoStreamingService.service.VideoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -22,11 +25,11 @@ import java.util.List;
 
     //CRUD endpoints :: POST create, get specific video, get all videos, update video status, delete video
 
-    //when a POST request is sent to /api/videos, the DTO will provide all the video information necessary to call service.createVideo()
-    @PostMapping
+    //when a POST request is sent to /api/videos/upload, create the video object and
+    @PostMapping("/upload")
     @ResponseStatus(HttpStatus.CREATED)
-    public Video upload(@RequestBody VideoCreateRequest request) {
-        return videoService.createVideo(request.getTitle(), request.getDescription(), request.getUserId(), request.getFilename());
+    public Video uploadVideo(@RequestParam("file") MultipartFile file, @ModelAttribute VideoUploadRequest request) {
+        return videoService.uploadVideo(file, request);
     }
 
     // When get request is sent to /api/videos/# the video with id '#' will be returned
