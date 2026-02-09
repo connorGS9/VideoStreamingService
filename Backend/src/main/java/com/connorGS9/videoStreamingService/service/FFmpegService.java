@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class FFmpegService {
@@ -26,15 +27,38 @@ public class FFmpegService {
         }
 
         ProcessBuilder processBuilder = buildFFmpegCommand(inputFile, outputDir);
-
+        processBuilder.redirectErrorStream(true);
         try {
             Process process = processBuilder.start();
-            int exitCode = process.waitFor();
+            Thread outputReader = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(process.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        if (line.contains("frame=") || line.contains("time=")) {
+                            System.out.println("FFmpeg: " + line);
+                        }
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+            outputReader.start();
 
-            if (exitCode != 0) {
-                String errorStream = readStream(process.getErrorStream());
-                throw new FFmpegException("FFmpeg failed: " + errorStream);
+            // Wait max 10 minutes for transcoding
+            boolean finished = process.waitFor(10, TimeUnit.MINUTES);
+
+            if (!finished) {
+                process.destroy();
+                throw new FFmpegException("FFmpeg timed out after 10 minutes");
             }
+
+            int exitCode = process.exitValue();
+            if (exitCode != 0) {
+                throw new FFmpegException("FFmpeg failed with exit code: " + exitCode);
+            }
+
+            System.out.println("FFmpeg transcoding completed successfully!");
 
         } catch (IOException | InterruptedException e) {
             throw new FFmpegException("Failed to run FFmpeg", e);
@@ -74,6 +98,7 @@ public class FFmpegService {
         List<String> command = new ArrayList<>();
 
         command.add("ffmpeg");
+        command.add("-y");
         command.add("-i");
         command.add(inputFile.getAbsolutePath());
 

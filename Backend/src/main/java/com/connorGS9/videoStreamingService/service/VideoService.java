@@ -1,5 +1,6 @@
 package com.connorGS9.videoStreamingService.service;
 
+import com.connorGS9.videoStreamingService.dto.PlaybackResponse;
 import com.connorGS9.videoStreamingService.dto.VideoUploadRequest;
 import com.connorGS9.videoStreamingService.exception.StorageException;
 import com.connorGS9.videoStreamingService.exception.VideoNotFound;
@@ -9,6 +10,7 @@ import com.connorGS9.videoStreamingService.repository.VideoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,7 +21,6 @@ import java.util.concurrent.atomic.AtomicLong;
 public class VideoService {
     private final VideoRepository videoRepository;
     private final StorageService_S3_Wrapper s3Wrapper;
-    private AtomicLong idCounter = new AtomicLong(1);
 
     // Inject through constructor
     public VideoService(VideoRepository repository, StorageService_S3_Wrapper s3Wrapper) {
@@ -80,5 +81,19 @@ public class VideoService {
             throw e;
         }
     }
+
+    public PlaybackResponse generatePlaybackURL(Long videoId) {
+        Video video = videoRepository.findById(videoId).orElseThrow(() -> new VideoNotFound("Video with id: " + videoId + " does not exist"));
+
+        if (!video.getStatus().equals(VideoStatus.READY)) {
+            throw new RuntimeException("Video not ready for playback, current status is: " + video.getStatus());
+        }
+
+        String playlistKey = "processed/" + videoId + "/playlist.m3u8";
+        String playbackURL = s3Wrapper.generatePresignedURL(playlistKey, Duration.ofHours(1));
+
+        return new PlaybackResponse(playbackURL, video.getId(), video.getTitle(), video.getLengthSeconds());
+    }
+
 
 }

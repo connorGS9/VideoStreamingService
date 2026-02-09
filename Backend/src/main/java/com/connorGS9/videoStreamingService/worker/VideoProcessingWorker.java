@@ -7,6 +7,7 @@ import com.connorGS9.videoStreamingService.repository.VideoRepository;
 import com.connorGS9.videoStreamingService.service.FFmpegService;
 import com.connorGS9.videoStreamingService.service.StorageService_S3_Wrapper;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,6 +15,7 @@ import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Service
 public class VideoProcessingWorker {
     // Runs in the background every 10 seconds, finds videos with status `UPLOADED`, and processes them.
     private final VideoRepository videoRepository;
@@ -25,12 +27,15 @@ public class VideoProcessingWorker {
         this.videoRepository = videoRepository;
         this.storageService = storageService;
         this.ffmpegService = ffmpegService;
+        System.out.println("VideoProcessingWorker initialized - will check for videos every 10 seconds");
     }
 
     @Scheduled(fixedDelay = 10000)
     public void processVideos() {
+        System.out.println("Checking for videos to process...");
         List<Video> videosToProcess = videoRepository.findByStatus(VideoStatus.UPLOADED);
         if (videosToProcess.isEmpty()) {
+            System.out.println("No videos to process");
             return;  // Nothing to process
         }
 
@@ -78,7 +83,7 @@ public class VideoProcessingWorker {
             ffmpegService.transcodeToHLS(rawVideoFile, outputDir);
 
             // 5. Upload HLS files to S3
-            String s3Prefix = "/processed/" + video.getId() + "/";
+            String s3Prefix = "processed/" + video.getId() + "/";
             System.out.println("Uploading to S3: " + s3Prefix);
             storageService.uploadDirectory(outputDir, s3Prefix);
 

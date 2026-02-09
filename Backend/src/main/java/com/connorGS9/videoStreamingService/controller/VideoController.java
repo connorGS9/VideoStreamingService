@@ -1,5 +1,6 @@
 package com.connorGS9.videoStreamingService.controller;
 
+import com.connorGS9.videoStreamingService.dto.PlaybackResponse;
 import com.connorGS9.videoStreamingService.dto.UpdateStatusRequest;
 import com.connorGS9.videoStreamingService.dto.VideoCreateRequest;
 import com.connorGS9.videoStreamingService.dto.VideoUploadRequest;
@@ -57,4 +58,8 @@ import java.util.List;
         videoService.deleteVideo(id);
     }
 
+    @GetMapping("/{id}/play")
+    public PlaybackResponse getPlaybackURL(@PathVariable Long id) {
+        return videoService.generatePlaybackURL(id);
+    }
 }
