@@ -7,6 +7,7 @@ import com.connorGS9.videoStreamingService.exception.VideoNotFound;
 import com.connorGS9.videoStreamingService.model.Video;
 import com.connorGS9.videoStreamingService.model.VideoStatus;
 import com.connorGS9.videoStreamingService.repository.VideoRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,6 +22,12 @@ import java.util.concurrent.atomic.AtomicLong;
 public class VideoService {
     private final VideoRepository videoRepository;
     private final StorageService_S3_Wrapper s3Wrapper;
+
+    @Value("${aws.s3.bucketName}")  // ← Add this
+    private String bucketName;
+
+    @Value("${aws.region}")  // ← Add this
+    private String region;
 
     // Inject through constructor
     public VideoService(VideoRepository repository, StorageService_S3_Wrapper s3Wrapper) {
@@ -68,7 +75,7 @@ public class VideoService {
         // Save and get incremented id from database
         video = videoRepository.save(video);
         try {
-            // Get the storagekey from the S3 wrapper using the file and videoId
+            // Get the storageKey from the S3 wrapper using the file and videoId
             String storageKey = s3Wrapper.uploadRawVideo(file, video.getId());
             // Set the storageKey
             video.setStorageKey(storageKey);
@@ -83,14 +90,28 @@ public class VideoService {
     }
 
     public PlaybackResponse generatePlaybackURL(Long videoId) {
+        System.out.println("=== generatePlaybackURL called ===");
+        System.out.println("Video ID: " + videoId);
         Video video = videoRepository.findById(videoId).orElseThrow(() -> new VideoNotFound("Video with id: " + videoId + " does not exist"));
+
+        System.out.println("Video found: " + video.getTitle());
+        System.out.println("Video status: " + video.getStatus());
 
         if (!video.getStatus().equals(VideoStatus.READY)) {
             throw new RuntimeException("Video not ready for playback, current status is: " + video.getStatus());
         }
 
-        String playlistKey = "processed/" + videoId + "/playlist.m3u8";
-        String playbackURL = s3Wrapper.generatePresignedURL(playlistKey, Duration.ofHours(1));
+        System.out.println("Bucket name: " + bucketName);
+        System.out.println("Region: " + region);
+
+        String playbackURL = String.format(
+                "https://%s.s3.%s.amazonaws.com/processed/%d/playlist.m3u8",
+                bucketName,
+                region,
+                videoId
+        );
+
+        System.out.println("Generated playback URL: " + playbackURL);
 
         return new PlaybackResponse(playbackURL, video.getId(), video.getTitle(), video.getLengthSeconds());
     }

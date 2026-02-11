@@ -60,6 +60,7 @@ import java.util.List;
 
     @GetMapping("/{id}/play")
     public PlaybackResponse getPlaybackURL(@PathVariable Long id) {
+        System.out.println("Play endpoint called for video ID: " + id);
         return videoService.generatePlaybackURL(id);
     }
 }
