@@ -14,7 +14,7 @@ A full-stack video streaming platform with automatic HLS transcoding, built with
 ## Tech Stack
 
 ### Backend
-- **Java 17** - Core language
+- **Java 21** - Core language
 - **Spring Boot 3.x** - REST API framework
 - **PostgreSQL** - Relational database
 - **AWS S3** - Cloud object storage
